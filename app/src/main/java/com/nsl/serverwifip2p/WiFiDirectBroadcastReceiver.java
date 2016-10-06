@@ -3,6 +3,7 @@ package com.nsl.serverwifip2p;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.NetworkInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
@@ -63,9 +64,24 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 
     private final boolean debug = false;
     private int deviceIndex = 0;
-    private TextView textView;
-    private TextView deviceNameTextView;
-    private String thisDeviceName = "";
+    private TextView getDeviceNameTextView;
+    private TextView getWifiStateTextView;
+    private TextView getNetworkConnectivityTextView;
+    private TextView getNetworkStateTextView;
+    private TextView getGroupOwnerTextView;
+    private TextView getReceiverOrSenderTextView;
+
+
+    private String devNameString = "";
+    private String wifiStateString = "";
+    private String networkConnectivity = "";
+    private String networkStateString = "";
+    private String groupOwnerString = "";
+    private String receiverOrSenderString = "";
+
+
+    public static boolean isGroupOwner = false;
+    public String connectToDeviceOne, connectToDeviceTwo;
 
     private WifiP2pManager mManager;
     private WifiP2pManager.Channel mChannel;
@@ -81,6 +97,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     //This is the class constructor, the arguments are the WiFi manager, the channel and the activity we want to respond to
     public WiFiDirectBroadcastReceiver(WifiP2pManager manager, WifiP2pManager.Channel channel,
                                        MainActivity activity, Context baseContext) {
+
         super();
         this.mManager = manager;
         this.mChannel = channel;
@@ -89,8 +106,22 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
         this.baseContext = baseContext;
         alreadyListening = false;
 
-        textView = (TextView) activity.findViewById (R.id.WiFiDevicesField);
-        deviceNameTextView = (TextView) activity.findViewById(R.id.HelloWorldTextField);
+
+
+        connectToDeviceOne = MainActivity.DeviceOne;
+        connectToDeviceTwo = MainActivity.DeviceTwo;
+
+
+    //    textView = (TextView) activity.findViewById (R.id.WiFiDevicesField);
+    //    deviceNameTextView = (TextView) activity.findViewById(R.id.HelloWorldTextField);
+
+
+        getDeviceNameTextView = (TextView) activity.findViewById(R.id.HelloWorldTextField);
+        getWifiStateTextView =  (TextView) activity.findViewById(R.id.WiFiDevicesField);
+        getNetworkConnectivityTextView =  (TextView) activity.findViewById(R.id.NetworkState);
+        getNetworkStateTextView =  (TextView) activity.findViewById(R.id.State);
+        getGroupOwnerTextView =  (TextView) activity.findViewById(R.id.GroupOwner);
+        getReceiverOrSenderTextView =  (TextView) activity.findViewById(R.id.ReceiverOrSender);
 
 
 
@@ -125,21 +156,45 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                 String delimiter = "\n";
                 String[] peerInfo = peerPhrase.split(delimiter);
 
-
-                //if (debug)
+                if (debug)
                 Log.d(className, "Peer = " + counter + " " + peerInfo[0]);
 
 
                 textViewString += peerInfo [0] + "\n";
+
+
+                if (peerInfo[0].equals(connectToDeviceOne) || peerInfo[0].equals(connectToDeviceTwo))
+                {
+                    deviceIndex = counter;
+                    //FileServerAsyncTask.deviceToConnectTo = (WifiP2pDevice) peers.get(counter);
+                    //if (debug)
+                    if (peerInfo[0].equals(connectToDeviceOne))
+                        if (debug)
+                    Log.d (className, "Connecting to " + connectToDeviceOne);
+                    else
+                        if (debug)
+                    Log.d(className, "Connecting to Device Two");
+
+                    connectToPeer((WifiP2pDevice) (peers.get(counter)), peerInfo[0]);
+                }
+                else {
+                   // Log.d(className, "No peers available to connect to");
+                    //Log.d (className, connectToDeviceOne + " " + peerInfo[0] + " " + connectToDeviceTwo + " ");
+                }
+
+
+
+
+
             }
 
-            textView.setText(textViewString);
+           // textView.setText(textViewString);
 
             if (!alreadyListening)
             {
-                Intent mIntent = new Intent (MainActivity.appContext, FileServerAsyncTask.class);
-                //mIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                baseContext.startService(mIntent);
+               // Intent mIntent = new Intent (MainActivity.appContext, FileServerAsyncTask.class);
+
+                //baseContext.startService(mIntent);
                 alreadyListening = true;
             }
 
@@ -165,17 +220,15 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             @Override
             public void onSuccess() {
 
-                Log.d(className, "Connection Status : " + "Connected to " + deviceName);
+                if (debug)
+            Log.d(className, "Connection Status : " + "Connected to " + deviceName);
+
+                //textViewString = "Connected to " +deviceName + "\n";
 
 
 
-                /*
-                if (alreadyListening == false) {
-                    Intent mIntent = new Intent(baseContext, FileServerAsyncTask.class);
-                    baseContext.startService(mIntent);
-                    alreadyListening = true;
-                }
-                */
+
+
 
                 //baseContext.startService(mIntent);
 
@@ -186,6 +239,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             public void onFailure(int reason) {
                 if (debug)
                     Log.d(className, "Connection Status : " + "Failed to connect to " + deviceName);
+                //textViewString = "Not connected to any device";
 
             }
         });
@@ -224,6 +278,80 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 
     }
 
+
+
+
+    private WifiP2pManager.ConnectionInfoListener p2pListener = new WifiP2pManager.ConnectionInfoListener ()
+    {
+
+        @Override
+        public void onConnectionInfoAvailable (final WifiP2pInfo info)
+        {
+            // InetAddress from WifiP2pInfo struct.
+            //InetAddress groupOwnerAddress = (InetAddress) info.groupOwnerAddress.getHostAddress();
+
+            Log.d (className, "Connection Info Available listener");
+
+            if (info.groupFormed)
+            {
+                //Log.d (className, "Group owner address : " + info.groupOwnerAddress);
+
+                FileServerAsyncTask.groupOwnerAddress = info.groupOwnerAddress;
+
+                groupOwnerString = "GROUP OWNER : " +info.groupOwnerAddress;
+                getGroupOwnerTextView.setText(groupOwnerString);
+                //textViewString += "\nGroup Owner = " +info.groupOwnerAddress;
+                //textView.setText(textViewString);
+
+            }
+            else
+            {
+                Log.d (className, "Group not formed");
+            }
+
+            // After the group negotiation, we can determine the group owner.
+            if (info.groupFormed && info.isGroupOwner) {
+                Log.d (className, "Current Device is Group owner " + info.groupOwnerAddress);
+                isGroupOwner = true;
+
+                networkStateString = "P2P NETWORK STATE : Group Owner";
+                getNetworkStateTextView.setText(networkStateString);
+
+                if (alreadyListening == false) {
+                    Intent mIntent = new Intent(baseContext, FileServerAsyncTask.class);
+                    baseContext.startService(mIntent);
+                    alreadyListening = true;
+                }
+
+                // Do whatever tasks are specific to the group owner.
+                // One common case is creating a server thread and accepting
+                // incoming connections.
+            } else if (info.groupFormed)
+            {
+                Log.d (className, "Current Device is a Client and group owner is " +info.groupOwnerAddress);
+                isGroupOwner = false;
+
+
+                networkStateString = "P2P NETWORK STATE : Client";
+                getNetworkStateTextView.setText(networkStateString);
+
+
+                if (alreadyListening == false) {
+                    Intent mIntent = new Intent(baseContext, FileServerAsyncTask.class);
+                    baseContext.startService(mIntent);
+                    alreadyListening = true;
+                }
+
+                // The other device acts as the client. In this case,
+                // you'll want to create a client thread that connects to the group
+                // owner.
+            }
+        }
+    };
+
+
+
+
     //onReceiver function for BroadCast Receiver
     public void onReceive(Context context, Intent intent) {
 
@@ -240,11 +368,17 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                 if (debug)
                     Log.d(className, "Wifi State : " + "Enabled");
 
+                wifiStateString = "WIFI STATE : Enabled";
+                getWifiStateTextView.setText(wifiStateString);
+
                 discoverPeers();
 
             } else {
                 if (debug)
                     Log.d(className, "Wifi State : " + "Disabled");
+
+                wifiStateString = "WIFI STATE : Disabled";
+                getWifiStateTextView.setText(wifiStateString);
             }
 
         } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
@@ -264,13 +398,54 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             if (debug)
                 Log.d(className, "P2P Connection : " + "Changed");
             // Respond to new connection or disconnections
+
+
+            //Get information about current connection
+            NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
+
+
+            if (networkInfo.isConnected()) {
+
+                if (debug)
+                Log.d(className, "Network Connected");
+
+                networkConnectivity = "P2P NETWORK : Connected";
+                getNetworkConnectivityTextView.setText(networkConnectivity);
+
+                //textViewString += "Network Connected";
+                //textView.setText(textViewString);
+
+                // We are connected with the other device, request connection
+                // info to find group owner IP
+
+                mManager.requestConnectionInfo(mChannel, p2pListener);
+            }
+            else
+            {
+                if (debug)
+                    Log.d(className, "Network Disconnected");
+
+
+                networkConnectivity = "P2P NETWORK : Disconnected";
+                getNetworkConnectivityTextView.setText(networkConnectivity);
+
+
+
+                //textView.setText("Network Disconnected");
+            }
+
+
+
+
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
             // Respond to this device's wifi state changing
             if (debug)
                 Log.d(className, "P2P Connection : " +  "This Device Changed");
             WifiP2pDevice device = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
-            thisDeviceName = device.deviceName;
-            deviceNameTextView.setText ("Server : " + thisDeviceName);
+           // thisDeviceName = device.deviceName;
+            devNameString = device.deviceName;
+            getDeviceNameTextView.setText("DEV NAME : "  + devNameString);
+            //deviceNameTextView.setText ("Name : " + thisDeviceName);
 
 
         }

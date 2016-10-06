@@ -55,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
 
 
     private final String appName = "WiFiP2P";
+    public static final int portToConnectTo = 12125;
+    public static final String DeviceOne = "Device: NSL-android-2";
+    public static final String DeviceTwo = "Device: P2PDevBAB";
 
 
     WifiP2pManager mManager;
@@ -120,13 +123,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
-
-
-
-
         //WiFi P2P Registration
-
         Log.d(appName, "Registering with WiFi");
         //get an instance of WiFiP2P Manager
         mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);

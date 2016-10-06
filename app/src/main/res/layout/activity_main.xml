@@ -10,20 +10,47 @@
     tools:context="com.nsl.serverwifip2p.MainActivity">
 
     <TextView
-        android:id="@+id/HelloWorldTextField"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!" />
-
-
-
-
-
+    android:id="@+id/HelloWorldTextField"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="DEVICE NAME : " />
 
     <TextView
         android:id="@+id/WiFiDevicesField"
         android:layout_below="@id/HelloWorldTextField"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="None" />
+        android:text="WIFI STATE : " />
+
+    <TextView
+        android:id="@+id/NetworkState"
+        android:layout_below="@id/WiFiDevicesField"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="NETWORK CONNECTIVITY : " />
+
+    <TextView
+        android:id="@+id/State"
+        android:layout_below="@id/NetworkState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="P2P NETWORK STATE : " />
+
+
+    <TextView
+        android:id="@+id/GroupOwner"
+        android:layout_below="@id/State"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="P2P NETWORK POSITION : " />
+
+    <TextView
+        android:id="@+id/ReceiverOrSender"
+        android:layout_below="@id/GroupOwner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="COMMUNICATION STATE : " />
+
+
+
 </RelativeLayout>
