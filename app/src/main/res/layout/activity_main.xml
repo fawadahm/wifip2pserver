@@ -13,18 +13,35 @@
     android:id="@+id/HelloWorldTextField"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:text="DEVICE NAME : " />
+    android:text="DEV NAME : " />
 
     <TextView
         android:id="@+id/WiFiDevicesField"
         android:layout_below="@id/HelloWorldTextField"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="WIFI STATE : " />
+        android:text="WIFI P2P STATE : " />
+
+
+    <TextView
+        android:id="@+id/InitialDiscovery"
+        android:layout_below="@id/WiFiDevicesField"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="INITIAL DISCOVERY : " />
+
+
+    <TextView
+        android:id="@+id/PeersAvailable"
+        android:layout_below="@id/InitialDiscovery"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="NETWORK CONNECTIVITY : " />
+
 
     <TextView
         android:id="@+id/NetworkState"
-        android:layout_below="@id/WiFiDevicesField"
+        android:layout_below="@id/PeersAvailable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="NETWORK CONNECTIVITY : " />
@@ -45,11 +62,27 @@
         android:text="P2P NETWORK POSITION : " />
 
     <TextView
-        android:id="@+id/ReceiverOrSender"
+        android:id="@+id/SocketState"
         android:layout_below="@id/GroupOwner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="COMMUNICATION STATE : " />
+        android:text="SOCKET STATE : " />
+
+
+    <TextView
+        android:id="@+id/DataRate"
+        android:layout_below="@id/SocketState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DATA Rate : " />
+
+
+    <TextView
+        android:id="@+id/DataSentOrReceived"
+        android:layout_below="@id/DataRate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DATA Rate : " />
 
 
 
