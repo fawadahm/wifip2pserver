@@ -85,5 +85,18 @@
         android:text="DATA Rate : " />
 
 
+    <Button
+        android:id="@+id/StartButton"
+        android:layout_below="@id/DataSentOrReceived"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="Start Session"
+        android:onClick="buttonPress" />
+
+
+
+
+
+
 
 </RelativeLayout>

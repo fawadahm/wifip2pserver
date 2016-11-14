@@ -31,6 +31,9 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
 
      */
 
+
+
+
     private final boolean debug = false;
     private int deviceIndex = 0;
     private TextView getDeviceNameTextView;
@@ -73,9 +76,14 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
 
     private boolean alreadyConnected;
 
+
+
+
+
     //This is the class constructor, the arguments are the WiFi manager, the channel and the activity we want to respond to
     public WiFiDirectBroadcastReceiver(WifiP2pManager manager, WifiP2pManager.Channel channel,
                                        MainActivity activity, Context baseContext) {
+
 
         super();
         this.mManager = manager;
@@ -112,7 +120,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
 
 
 
-    //Peer listener interface to implement onPeersAvailable
+    //Peer List Listener for when Peers are Available or When they have changed
     private WifiP2pManager.PeerListListener peerListListener = new WifiP2pManager.PeerListListener() {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList peerList) {
@@ -120,6 +128,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
             peers.clear();//clear the list
             peers.addAll(peerList.getDeviceList());//update the list from peerList
             numberOfPeersAvailable = peers.size();//get the number of peers available
+
             getPeersAvailable.setText("PEERS AVAILABLE = " +numberOfPeersAvailable);//update it in the text view
 
             if (debug)
@@ -131,7 +140,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
                 String delimiter = "\n";
                 String[] peerInfo = peerPhrase.split(delimiter);
 
-                if (debug)
+                //if (debug)
                     Log.d(className, "Peer = " + counter + " " + peerInfo[0]);
                 textViewString += peerInfo [0] + "\n";
 
@@ -139,24 +148,33 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
                 {
 
                     connectingDevicePresent = true;
+                    Log.d (className, "Connecting device present");
                     deviceIndex = counter;//store the index of the device we want to connect to
+                    Log.d(className, "Breaking out of loop");
+                    break;
                 }
                 else
                     connectingDevicePresent = false;
             }
 
             if (peers.size() != 0) {//if size is not zero
-                if (debug)
+                //if (debug)
+
+
+                Log.d (className, "Already connected = " + alreadyConnected + " connecting device present = " + connectingDevicePresent);
+                if (alreadyConnected == false && connectingDevicePresent) {//check if we have already connected
                     Log.d(className, "Going to connect to index " + deviceIndex);
 
-                WifiP2pDevice connectToDevice = (WifiP2pDevice) peers.get(deviceIndex);//get the device we want to connect to
-                WifiP2pConfig deviceConfiguration = new WifiP2pConfig();//new config object to keep regarding the device
-                deviceConfiguration.deviceAddress = connectToDevice.deviceAddress;//store device MAC in config object
+                    WifiP2pDevice connectToDevice = (WifiP2pDevice) peers.get(deviceIndex);//get the device we want to connect to
+                    WifiP2pConfig deviceConfiguration = new WifiP2pConfig();//new config object to keep regarding the device
+                    deviceConfiguration.deviceAddress = connectToDevice.deviceAddress;//store device MAC in config object
 
-                if (alreadyConnected == false && connectingDevicePresent)//check if we have already connected
                     //if (devNameString != connectToDeviceOne)//we want only one device to do the connecting, because it results in race conditions
-                   // Log.d(className, "Connecting to " + deviceConfiguration);
+                    // Log.d(className, "Connecting to " + deviceConfiguration);
                     mManager.connect(mChannel, deviceConfiguration, connectionActionListener);//try to connect to device and store results in connectionActionListener
+                }
+                else
+                    Log.d(className, "Stopped extra connections");
             }
         }
     };
@@ -189,6 +207,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
 
 
 
+    //ACTION LISTENER FOR DISCOVERY PROCESS
     private WifiP2pManager.ActionListener actionListener = new WifiP2pManager.ActionListener()
     {
         //Action Listener to DiscoverPeers()
@@ -197,6 +216,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
         {
             if (debug)
                 Log.d(className, "Peers discovered");
+
+            //Are there any peers? If yes, then request the list
             if (mManager != null) {
                 mManager.requestPeers(mChannel, peerListListener);//request peers
             }
@@ -261,6 +282,9 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver{
                 if (debug)
                     Log.d (className, "Group not formed");
                 }
+            //Group is broke, try discovering peers again
+            alreadyConnected = false;
+            discoverPeers();
             getNetworkConnectivityTextView.setText(networkConnectivity);
         }
     };

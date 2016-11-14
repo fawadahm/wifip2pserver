@@ -26,6 +26,7 @@ import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.os.UserHandle;
 import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
@@ -40,20 +41,25 @@ import android.widget.TextView;
 
 import org.w3c.dom.Text;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Scanner;
 
 
 /**
@@ -62,6 +68,9 @@ import java.util.Calendar;
  */
 
 public class MainActivity extends AppCompatActivity {
+
+
+    public String AppType = "";
 
 
     private final String appName = "WiFiP2P";
@@ -84,7 +93,10 @@ public class MainActivity extends AppCompatActivity {
     WifiP2pManager.Channel mChannel;
     BroadcastReceiver mReceiver;
 
+    public boolean startTransmission;
 
+
+    Process pu;
 
 
     NsdManager.RegistrationListener mRegistrationListener;
@@ -162,10 +174,94 @@ public class MainActivity extends AppCompatActivity {
         return getApplicationContext();
     }
 
+
+    private void runTCPdump (String appType)
+    {
+        DateFormat df = new SimpleDateFormat("dd_MM_yy_HH_mm_ss");
+        Calendar calObj = Calendar.getInstance();
+
+        String timeAndDATE = df.format(calObj.getTime());
+        Log.d("className", timeAndDATE);
+
+
+        //String fileName =
+
+        try
+        {
+            Log.d ("Hello", "Running from this class");
+            pu = Runtime.getRuntime().exec("su");
+
+            //String command = "tcpdump -i any -w /sdcard/tcpdumpfiles/" + appType + "_dump_  " + timeAndDATE + ".pcap\n";// + appType + "_Dump " +df.format(calObj.getTime())+".pcap";
+            String command = "tcpdump -i any";
+            OutputStream outputStream = pu.getOutputStream();
+            outputStream.write (command.getBytes());
+            outputStream.flush();
+
+            Log.d ("className", "stuck here");
+
+
+            /**
+            outputStream.write("exit\n".getBytes());
+            outputStream.flush();
+            outputStream.close();
+             **/
+
+
+
+
+
+
+            try {
+                pu.waitFor();
+            }
+            catch (InterruptedException e)
+            {
+                Log.d ("className", e.getMessage());
+            }
+
+            BufferedReader BR = new BufferedReader( new InputStreamReader( pu.getInputStream()));
+
+            String line = "";
+            String output = "";
+
+            Log.d ("className", "stuck here down");
+
+            while ((line = BR.readLine()) != null)
+            {
+                Log.d ("className", line);
+                Log.d ("className", "stuck here lower");
+            }
+
+
+
+
+
+
+
+
+        }
+        catch (IOException e)
+        {
+            Log.d("className", e.getMessage());
+
+        }
+
+    }
+
+
+    //Entry point of program
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        Log.d(appName, "onCreate ()");
+
+        startTransmission = false;
+
+
+
+
+
+
+        //Log.d("className", "THIS IS DIFFERENT");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         registerReceiver(br, new IntentFilter("intentFilterForBroadcast"));
@@ -205,6 +301,11 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
+
+
+
+
     }
 
 
@@ -231,6 +332,8 @@ public class MainActivity extends AppCompatActivity {
     class ClientThread implements Runnable
     {
 
+
+
         @Override
         public void run ()
         {
@@ -238,10 +341,10 @@ public class MainActivity extends AppCompatActivity {
                 Socket clientSocket = new Socket();
                 clientSocket.connect(new InetSocketAddress(internetAddress, portToConnectTo), 0);
                 Log.d (clientTAG, "Connected to Server on " +internetAddress +" at port = " +portToConnectTo );
-                setView(SocketStateView, "SOCKET STATE: Connected as Client");
+                setView(SocketStateView, "SOCKET STATE: Connected as Client & Start Session");
 
                 //open the input file
-                FileInputStream fis = new FileInputStream(Environment.getExternalStorageDirectory() + "/pointcloudfiles/thirtythree.txt");
+                FileInputStream fis = new FileInputStream(Environment.getExternalStorageDirectory() + "/pointcloudfiles/random.img");
                 //Specify File Size
                 int dataToSend = fis.available()/(1000 * 1000);
                 Log.d(clientTAG, "File size = " + fis.available()/(1000 * 1000.0f) + " MB");
@@ -258,48 +361,49 @@ public class MainActivity extends AppCompatActivity {
                 int deltaDataSent = 0;
                 long currentTime = 0;
                 float elapsedTime = 0;
-                while ( (flag = fis.read(byteArray, counter * byteArray.length, byteArray.length)) != -1)
-                {
-                    if (firstTimeSend)
-                    {
-                        Log.d(clientTAG, "Transmission Start Time = " + System.currentTimeMillis() +" ms");
-                        startTime = System.currentTimeMillis();//Note the Start Time
-                        firstTimeSend = false;
+
+                while (startTransmission == false);
+
+                    while ((flag = fis.read(byteArray, counter * byteArray.length, byteArray.length)) != -1) {
+                        if (firstTimeSend) {
+                           // runTCPdump("Client");
+                            Log.d(clientTAG, "Transmission Start Time = " + System.currentTimeMillis() + " ms");
+                            startTime = System.currentTimeMillis();//Note the Start Time
+                            firstTimeSend = false;
+                        }
+                        outputStream.write(byteArray);//write data to the output port
+
+
+                        deltaDataSent = ((myCounter + 1) * byteArray.length) / (1000);
+                        currentTime = System.currentTimeMillis();
+                        elapsedTime = (currentTime - startTime) / (1000.0f * 1000.0f);
+
+                        //TextViews
+                        setView(DataTransferView, "DATA SENT = " + deltaDataSent + " kb");
+                        setView(DataRateView, "DATA RATE = " +
+                                (deltaDataSent * 8.0f) / (elapsedTime * 1000 * 1000) + "" + " MBps");
+                        myCounter++;
                     }
-                    outputStream.write(byteArray);//write data to the output port
+                    Log.d(clientTAG, "End Time = " + System.currentTimeMillis() + " ms");
+
+                    Log.d(clientTAG, "Data Sent");
+                    long endTime = System.currentTimeMillis();//Note the End Time
+                    elapsedTime = (endTime - startTime) / 1000.0f;
+                    float dataSent = dataToSend;
+
+                    if (elapsedTime != 0)
+                        Log.d(clientTAG, "Speed =  " + (dataSent * 8.0f) / (elapsedTime) + " Mbps");
+                    Log.d(clientTAG, "Data Sent = " + (dataSent * 8.0f) / (1000 * 1000.0f) + " MB");
+                    Log.d(clientTAG, "Time = " + elapsedTime + " seconds");
 
 
+                    outputStream.flush();
+                    outputStream.close();
+                    fis.close();
 
-                    deltaDataSent = ((myCounter+1)*byteArray.length)/(1000);
-                    currentTime = System.currentTimeMillis();
-                    elapsedTime = (currentTime - startTime)/(1000.0f*1000.0f);
-
-                    //TextViews
-                    setView(DataTransferView, "DATA SENT = " + deltaDataSent + " kb");
-                    setView(DataRateView, "DATA RATE = " +
-                            (deltaDataSent*8.0f)/(elapsedTime*1000*1000) + "" + " MBps");
-                    myCounter++;
+                    clientSocket.close();
                 }
-                Log.d(clientTAG, "End Time = " +System.currentTimeMillis() + " ms");
 
-                Log.d (clientTAG, "Data Sent");
-                long endTime = System.currentTimeMillis();//Note the End Time
-                elapsedTime = (endTime - startTime)/1000.0f;
-                float dataSent = dataToSend;
-
-                if (elapsedTime != 0)
-                    Log.d(clientTAG, "Speed =  " + (dataSent * 8.0f)/(elapsedTime) + " Mbps");
-                Log.d (clientTAG, "Data Sent = " + (dataSent * 8.0f)/(1000*1000.0f) + " MB");
-                Log.d (clientTAG, "Time = " + elapsedTime + " seconds");
-
-
-
-                outputStream.flush();
-                outputStream.close();
-                fis.close();
-
-                clientSocket.close();
-            }
             catch (IOException e)
             {
                 Log.d(clientTAG, e.getMessage());
@@ -310,9 +414,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    public void buttonPress (View view)
+    {
+        startTransmission = true;
+    }
+
 
     class ServerThread implements  Runnable
     {
+
 
         @Override
         public void run ()
@@ -367,6 +477,7 @@ public class MainActivity extends AppCompatActivity {
                 {
                     if (firstTimeSend)
                     {
+                        //runTCPdump("Server");
                         Log.d(serverTAG, "Server Data Received Start Time = " + startTime + " ms");
                         firstTimeSend = false;
                     }
